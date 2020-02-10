@@ -1,8 +1,13 @@
 version: '3'
 services:
   rabbitmq:
-    image: 'rabbitmq:3.6-management-alpine'
-
+    image: 'rabbitmq'
+    hostname: "rabbitmq-server"
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "SWQOKODSQALRPCLNMEQG"
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+      RABBITMQ_DEFAULT_VHOST: "/"
     # These ports are exposed on the host; 'hostport:containerport'.
     # You could connect to this server from outside with the *host's*
     # DNS name or IP address and port 5672 (the left-hand side of the
@@ -12,10 +17,24 @@ services:
       - '5672:5672'
       # HTTP management UI
       - '15672:15672'
+    labels:
+      NAME: "rabbitmq-server"
     networks:
       - network
   emitter:
     build: event-emitter
+    depends_on:
+      - rabbitmq
+    tty: true
+    environment:
+      AMQP_URL: 'amqp://rabbitmq?connection_attempts=5&retry_delay=5'
+    networks:
+      - network
+  consumer:
+    build: consumer
+    depends_on:
+      - rabbitmq
+    tty: true
     environment:
       AMQP_URL: 'amqp://rabbitmq?connection_attempts=5&retry_delay=5'
     networks:

@@ -5,20 +5,26 @@ import functools
 import json
 import pika
 
+from uuid import UUID
 from logger import LOGGER
 
 
+class UUIDEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, UUID):
+            # if the obj is uuid, we simply return the value of uuid
+            return obj.hex
+        return json.JSONEncoder.default(self, obj)
 
 
 class Publisher(object):
-    EXCHANGE = 'exchange'
+    EXCHANGE = 'message'
     EXCHANGE_TYPE = 'topic'
-
-    ROUTING_KEY = 'exchange.example'
     PUBLISH_INTERVAL = 1
     QUEUE = 'text'
+    ROUTING_KEY = 'example.text'
 
-    def __init__(self, amqp_url):
+    def __init__(self, amqp_url, on_connection_complete):
         self._connection = None
         self._channel = None
 
@@ -30,13 +36,13 @@ class Publisher(object):
         self._stopping = False
         self._url = amqp_url
 
+        self.on_connection_complete_callback = on_connection_complete
+
         try:
             self._connection = self.connect()
             self._connection.ioloop.start()
         except KeyboardInterrupt:
-            self.stop()
-            if (self._connection is not None and
-                    not self._connection.is_closed):
+            if (self._connection is not None and not self._connection.is_closed):
                 # Finish closing
                 self._connection.ioloop.start()
 
@@ -175,6 +181,7 @@ class Publisher(object):
         LOGGER.info('Queue bound')
         LOGGER.info('Issuing consumer related RPC commands')
         self.enable_delivery_confirmations()
+        self.on_connection_complete_callback(self)
 
 
     def enable_delivery_confirmations(self):
@@ -219,13 +226,16 @@ class Publisher(object):
 
     def publish_message(self, message):
         if self._channel is None or not self._channel.is_open:
+            LOGGER.warning('Channel is not open, could not publish event', json.dumps(message, cls=UUIDEncoder))
             return
 
         properties = pika.BasicProperties(content_type='application/json')
 
-        self._channel.basic_publish(self.EXCHANGE, self.ROUTING_KEY,
-                                    json.dumps(message, ensure_ascii=False),
-                                    properties)
+        self._channel.basic_publish(
+            self.EXCHANGE,
+            self.ROUTING_KEY,
+            json.dumps(message, ensure_ascii=False, cls=UUIDEncoder),
+            properties)
         self._message_number += 1
         self._deliveries.append(self._message_number)
         LOGGER.info('Published message # %i', self._message_number)

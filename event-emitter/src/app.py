@@ -4,6 +4,7 @@ from random import seed, random
 
 from entities import get_online_auction_purchase_event, get_live_auction_purchase_event, get_payment_made_event
 from Publisher import Publisher
+from logger import LOGGER
 
 seed()
 
@@ -18,14 +19,16 @@ def main():
     # Get the location of the AMQP broker (RabbitMQ server) from
     # an environment variable
     amqp_url = os.environ['AMQP_URL']
-    print('URL: %s' % (amqp_url,))
+    LOGGER.info('URL: %s' % (amqp_url,))
 
     # Connect to localhost:5672 as guest with the password guest and virtual host "/" (%2F)
-    example = Publisher(amqp_url)
+    Publisher(amqp_url, on_connection_complete=publish_events)
 
+
+def publish_events(publisher):
     while True:
         event = get_event()
-        example.publish_message(event)
+        publisher.publish_message(event)
         time.sleep(random())
 
 
