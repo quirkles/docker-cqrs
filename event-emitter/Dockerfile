@@ -1,15 +1,12 @@
-FROM ubuntu:18.04
-RUN apt-get update && apt-get install \
-  -y --no-install-recommends python3 python3-virtualenv
-
-ENV VIRTUAL_ENV=/opt/venv
-RUN python3 -m virtualenv --python=/usr/bin/python3 $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+FROM python:3.7-alpine
+WORKDIR /code
 
 # Install dependencies:
-COPY requirements.txt .
+COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
+ENV PYTHONUNBUFFERED=1
+
 # Run the application:
-COPY myapp.py .
-CMD ["python", "myapp.py"]
+COPY src .
+CMD ["python", "app.py"]
