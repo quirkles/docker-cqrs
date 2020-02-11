@@ -9,8 +9,8 @@ from logger import LOGGER
 
 class ExampleConsumer(object):
     EXCHANGE = 'message'
-    EXCHANGE_TYPE = 'topic'
-    QUEUE = 'text'
+    EXCHANGE_TYPE = 'fanout'
+    QUEUE = ''
     ROUTING_KEY = 'example.text'
 
     def __init__(self, amqp_url):
@@ -81,10 +81,10 @@ class ExampleConsumer(object):
 
     def setup_exchange(self, exchange_name):
         LOGGER.info('Declaring exchange: %s', exchange_name)
-        # Note: using functools.partial is not required, it is demonstrating
-        # how arbitrary data can be passed to the callback when it is called
         cb = functools.partial(
-            self.on_exchange_declareok, userdata=exchange_name)
+            self.on_exchange_declareok,
+            userdata=exchange_name
+        )
         self._channel.exchange_declare(
             exchange=exchange_name,
             exchange_type=self.EXCHANGE_TYPE,
@@ -105,9 +105,8 @@ class ExampleConsumer(object):
                     self.ROUTING_KEY)
         cb = functools.partial(self.on_bindok, userdata=queue_name)
         self._channel.queue_bind(
-            queue_name,
-            self.EXCHANGE,
-            routing_key=self.ROUTING_KEY,
+            queue=queue_name,
+            exchange=self.EXCHANGE,
             callback=cb)
 
     def on_bindok(self, _unused_frame, userdata):

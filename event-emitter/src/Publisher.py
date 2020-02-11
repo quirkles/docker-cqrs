@@ -19,10 +19,10 @@ class UUIDEncoder(json.JSONEncoder):
 
 class Publisher(object):
     EXCHANGE = 'message'
-    EXCHANGE_TYPE = 'topic'
+    EXCHANGE_TYPE = 'fanout'
     PUBLISH_INTERVAL = 1
     QUEUE = 'text'
-    ROUTING_KEY = 'example.text'
+    ROUTING_KEY = ''
 
     def __init__(self, amqp_url, on_connection_complete):
         self._connection = None
