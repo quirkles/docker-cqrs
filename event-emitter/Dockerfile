@@ -10,4 +10,4 @@ ENV PYTHONUNBUFFERED=1
 # Run the application:
 COPY src .
 
-CMD ["python", "app.py"]
+#CMD ["python", "app.py"]
